@@ -1,0 +1,161 @@
+{
+	"Variables" : {
+			"org" : "myOrg" ,
+			"project" : "x" ,
+			"customer" : "y" ,
+			"env" : "dev" ,
+			"billing-id" : "x-q-2024", 
+			"userx":"xuserismyname",
+			"passwordCharSet":"asdsllkuruhf88yrhnladddpoilkjfbystfngqshd10984",
+			"passwordLength":"8"
+			}
+			,
+	"Delete" : [
+			{
+				"ref" : "d-file-no1",
+				"type": "File",
+				"bucket": "ref(bucket-a:id)",
+				"key"  : "ref(file-a:key)"
+			},
+			{
+				"ref" : "d-bucket-a",
+				"type": "Bucket",
+				"id"  : "ref(bucket-a:id)"
+			},
+			{
+				"ref" : "d-policy-stuff",
+				"type": "Policy",
+				"id"  : "ref(policy-stuff:id)"
+			},
+			{
+				"ref" : "d-role-stuff",
+				"type" : "Role",
+				"id"	:"ref(role-stuff:id)"
+			},
+			{
+				"ref" : "d-user-x",
+				"type": "User",
+				"id"  : "%(userx)"
+			}
+
+		],
+	"Create" : 
+		[
+			{
+				"ref" : "bucket-a",
+				"type": "Bucket",
+				"id"  :  "%(org)-%(project)-%(env)-a",
+				"arn" : "None",
+				"acl" : "private",
+				"region" : "eu-north-1",
+				"dataRedundancy":"SingleAvailabilityZone",
+				"typeOfBucket":"Directory",
+				"objectLockEnabledForBucket" : false,
+				"objectOwnership":"BucketOwnerPreferred",
+				"TagSet":{ 
+			            "org": "%(org)",
+			            "project" : "%(project)",
+			            "customer" : "%(customer)",
+			            "env" : "%(env)",
+			            "data-source": "stuff"
+			        }
+			},
+			{
+				"ref" : "file-a",
+				"type": "File",
+				"bucket" : "ref(bucket-a:id)",
+				"key" : "mystuff/myfile.txt",
+				"content": "blar. blar. blar.",
+				"TagSet":{ 
+			            "org": "%(org)",
+			            "project" : "%(project)",
+			            "customer" : "%(customer)",
+			            "env" : "%(env)",
+			            "data-source": "my stuff"
+
+			        }
+			},
+			{
+				"ref" : "policy-stuff",
+				"type": "Policy",
+				"id"  :  "%(org)-%(project)-%(env)-stuff",
+				"arn" : "None",
+				"description": "access to my stuff",
+				"Template":{
+							    "Version": "2012-10-17",
+							    "Statement": [
+							        {
+							            "Sid": "VisualEditor0",
+							            "Effect": "Allow",
+							            "Action": [
+							                "s3:PutObject",
+							                "s3:GetObjectAcl",
+							                "s3:GetObject",
+							                "s3:GetObjectAttributes",
+							                "s3:ListBucket",
+							                "s3:DeleteObject"
+							            ],
+							            "Resource": [
+							                "ref(bucket-a:arn)",
+							                "ref(bucket-a:arn)/mystuff/*.csv",
+							                "ref(bucket-master:arn)/ref(file-a:key)"
+							            ]
+							        }
+							    ]
+							},
+				"TagSet":{ 
+			            "org": "%(org)",
+			            "project" : "%(project)",
+			            "customer" : "%(customer)",
+			            "env" : "%(env)",
+			            "data-source": "my stuff"
+			        }
+
+			},
+			{
+				"ref" : "role-stuff",
+				"type" : "Role",
+				"description": " used by my stuff",
+				"arn" : "None",
+				"id":"%(org)-%(project)-%(env)-mystuff-role",
+				"TagSet":{ 
+			            "org": "%(org)",
+			            "project" : "%(project)",
+			            "customer" : "%(customer)",
+			            "env" : "%(env)",
+			            "data-source": "%mystuff"
+			     	},
+			    "Policy":{
+			    	"policy-lambda":"ref(policy-stuff:arn)"
+			    	},
+			    "PolicyRoleTemplate":{
+					    "Version": "2012-10-17",
+					    "Statement": [
+					        {
+					            "Effect": "Allow",
+					            "Principal": {
+					                "Service": "lambda.amazonaws.com"
+					            },
+					            "Action": "sts:AssumeRole"
+					        }
+					    ]
+				}
+			},
+			{
+				"ref": "user-x",
+				"type": "User",
+				"description" : "fdfdf",
+				"id"  : "%(userx)",
+				"pwdLen":"%(passwordLength)",
+				"pwdCharSet":"%(passwordCharSet)",
+				"TagSet":{ 
+			            "org": "%(org)",
+			            "project" : "%(project)",
+			            "customer" : "%(customer)",
+			            "env" : "%(env)",
+			            "data-source": "mystuff",
+			            "used-By":"someone for something"
+			     	}
+			}
+		]	
+}
