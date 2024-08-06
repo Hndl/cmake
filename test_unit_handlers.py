@@ -274,7 +274,7 @@ class TestHandlersFunctions(unittest.TestCase):
 		except Exception as eX:
 			logger.error(f'{testDescription} - Exception: {eX}')
 
-	def test_hh_delete_user(self) :
+	def test_hh_create_user(self) :
 		accountId = '905418456790'
 		action = 'Create'
 		typeOf = 'User'
@@ -286,11 +286,82 @@ class TestHandlersFunctions(unittest.TestCase):
 			logger.info(f'{testDescription} - Started')
 			self.executeTest(jcfg,action,typeOf,nodeId,testDescription)
 			logger.info(f'{testDescription} - Complete')
-			logger.info(f'\n{json.dumps(jcfg, indent=4)}')
+			#logger.info(f'\n{json.dumps(jcfg, indent=4)}')
+
+		except Exception as eX:
+			logger.error(f'{testDescription} - Exception: {eX}')
+
+	def test_i_delete_Loggroup(self) :
+		accountId = '905418456790'
+		action = 'Delete'
+		typeOf = 'Loggroup'
+		nodeId = 10
+		testDescription = f'{action} {typeOf} :: Test'
+		
+		try:
+			jcfg = self.getJson('./qa.json')	
+			logger.info(f'{testDescription} - Started')
+			self.executeTest(jcfg,action,typeOf,nodeId,testDescription)
+			logger.info(f'{testDescription} - Complete')
+			#logger.info(f'\n{json.dumps(jcfg, indent=4)}')
 
 		except Exception as eX:
 			logger.error(f'{testDescription} - Exception: {eX}')
 	
+
+	def test_ii_create_Loggroup(self) :
+		accountId = '905418456790'
+		action = 'Create'
+		typeOf = 'Loggroup'
+		nodeId = 10
+		testDescription = f'{action} {typeOf} :: Test'
+		
+		try:
+			jcfg = self.getJson('./qa.json')	
+			logger.info(f'{testDescription} - Started')
+			self.executeTest(jcfg,action,typeOf,nodeId,testDescription)
+			logger.info(f'{testDescription} - Complete')
+			#logger.info(f'\n{json.dumps(jcfg, indent=4)}')
+
+		except Exception as eX:
+			logger.error(f'{testDescription} - Exception: {eX}')
+
+	def test_j_delete_awsbasiclambdapolicy(self) :
+		accountId = '905418456790'
+		action = 'Delete'
+		typeOf = 'Policy'
+		nodeId = 11
+		testDescription = f'{action} {typeOf} :: Test'
+		
+		try:
+			jcfg = self.getJson('./qa.json')	
+			logger.info(f'{testDescription} - Started')
+			self.executeTest(jcfg,action,typeOf,nodeId,testDescription)
+			logger.info(f'{testDescription} - Complete')
+			
+		except Exception as eX:
+			logger.error(f'{testDescription} - Exception: {eX}')
+
+	def test_jj_create_awsbasiclambdapolicy(self) :
+		accountId = '905418456790'
+		action = 'Create'
+		typeOf = 'Policy'
+		nodeId = 11
+		testDescription = f'{action} {typeOf} :: Test'
+		
+		try:
+			jcfg = self.getJson('./qa.json')	
+			
+			jcfg['Create'][10]['arn'] = 'arn:aws:logs:eu-north-1:905418456790:log-group:/aws/lambda/vw/dev/vindolanda/lambda/dataprocessor-loggroup-a:*'
+			jcfg['Create'][10]['areaArn'] = 'arn:aws:logs:eu-north-1:905418456790:*'
+			
+			logger.info(f'{testDescription} - Started')
+			self.executeTest(jcfg,action,typeOf,nodeId,testDescription)
+			logger.info(f'{testDescription} - Complete')
+			
+		except Exception as eX:
+			logger.error(f'{testDescription} - Exception: {eX}')
+		
 	def getJson(self,f):
 		cfgJson=None
 		with open(f) as json_data:

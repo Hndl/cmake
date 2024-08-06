@@ -5,6 +5,8 @@ from types  import SimpleNamespace
 from abc import ABC, abstractmethod
 from handlefactory import * 
 
+logging.basicConfig(level=logging.INFO,format='%(asctime)s:%(levelname)s:[%(module)s.%(funcName)s.%(lineno)d]:%(message)s')
+logger = logging.getLogger(__name__)
 
 def loadConfiguration ( fname : str ) -> dict :
     with open(fname) as json_data:
@@ -12,30 +14,62 @@ def loadConfiguration ( fname : str ) -> dict :
         json_data.close()
     return cfgJson
 
-
+def getClientErrorDetails(response):
+    return response['Error']['Code'],response['Error']['Message']
+    
 
 def build_environment(  configuration : dict ) -> int :
 
-    config = SimpleNamespace(**configuration)
+    #config = SimpleNamespace(**configuration)
 
-    for resourceItem in config.Create :
-        resource = SimpleNamespace(**resourceItem)
-        print(f'building {resource.type}:{resource.ref} - started')
-        bRet, arnRef = handleResource('Create',resource.type,configuration,resourceItem)
-        print(f'building {resource.type}:{resource.ref} - done')
+    #todo add error control
+    #reuse function to do both delete and create.
+    destroyResources(configuration)
+   
+
+    try:
+        createResources(configuration)
+    except Exception as eX:
+        logger.error(eX)
+
+   # TODO support accesskeys,region and secrety
+   # TODO user to attach policy
+   # Test Policies are being detached 
+   # policys attached to user are not being deleted correctly.
+def destroyResources( configuration : dict) -> int:
+    errCount = 0
+    for resourceItem in configuration['Delete'] :
+        try:
+            print(f"destroying {resourceItem['type']}:{resourceItem['ref']} - Started")
+            handleResource('Delete',resourceItem['type'],configuration,resourceItem)
+            print(f"destroying {resourceItem['type']}:{resourceItem['ref']} - Completed")
+        except Exception as eX:
+            logger.warning(eX)
+            errCount+=1
+
+    return errCount
+
+def createResources( configuration : dict) -> int:
+    for resourceItem in configuration['Create'] :
+        print(f"build {resourceItem['type']}:{resourceItem['ref']} - Started")
+        handleResource('Create',resourceItem['type'],configuration,resourceItem)
+        print(f"build {resourceItem['type']}:{resourceItem['ref']} - Completed")
+    
+    return 0
+
 
 
 def handleResource( action : str, command : str,  configuration : dict, resourceConfiguration : dict ) :
-    cmdHandler = handlers.cloudActionFactory ( action , command, configuration, resourceConfiguration ) 
-    cmdHandler.init(  configuration, resourceConfiguration ) 
-    bResult, arnRef = cmdHandler.execute( configuration, resourceConfiguration )
+    cmdHandler = cloudActionFactory ( action , command, configuration, resourceConfiguration ) 
+    cmdHandler.init( configuration, resourceConfiguration ) 
+    cmdHandler.execute( )
     cmdHandler.final( )
-    return bResult,arnRef
+    return 
 
 def main () : 
-    cfg=loadConfiguration('./qa.json')
+    cfg=loadConfiguration('./vw-vin-qa.json')
     iResult = build_environment(  cfg)
-    print(json.dumps(cfg, indent=4))
+    #print(json.dumps(cfg, indent=4))
 
 
 # -- MAIN --

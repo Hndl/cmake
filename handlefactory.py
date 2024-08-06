@@ -11,6 +11,9 @@ from bucket import *
 from role import *
 from policy import *
 from users import *
+from loggroup import *
+from awslambda import *
+from eventbridgeschedule import *
 
 logging.basicConfig(level=logging.INFO,format='%(asctime)s:%(levelname)s:[%(module)s.%(funcName)s.%(lineno)d]:%(message)s')
 logger = logging.getLogger(__name__)
@@ -33,7 +36,7 @@ logger = logging.getLogger(__name__)
 def cloudActionFactory ( action : str, command : str, configuration : dict, resourceConfiguration : dict ) -> CloudAction:
 
 	availableHandlers= {
-		'default': DefaultAction(),
+		'default:default': DefaultAction(),
 		'Create:Bucket' : CreateBucket(), # Done
 		'Delete:Bucket' : DeleteBucket(), # Done
 		'Create:File' : CreateFile(), # Done
@@ -44,9 +47,12 @@ def cloudActionFactory ( action : str, command : str, configuration : dict, reso
 		'Delete:Role' : DeleteRole(), # Done
 		'Create:User' : CreateUser(), # Done
 		'Delete:User'  : DeleteUser(), # Done
-		'Create:Loggroup' : 'TODO',
-		'Create:Lambda' : 'TODO',
-		'Create:EventBridgeSchedule' : 'TODO',
+		'Create:Loggroup' : CreateLoggroup(),
+		'Delete:Loggroup' : DeleteLoggroup(),
+		'Create:Lambda' : CreateLambda(),
+		'Delete:Lambda' : DeleteLambda(),
+		'Create:EventBridgeSchedule' : CreateEventBridgeSchedule(),
+		'Delete:EventBridgeSchedule' : DeleteEventBridgeSchedule()
 	}
 	
 	if f'{action}:{command}' in availableHandlers:

@@ -14,7 +14,7 @@ CONST_VX_REFERENCE              : Final[str]    = '%\\((.*?)\\)'
 CONST_REF_ATTR_SPLIT_CHAR       : Final[str]    = ':'
 
 logging.basicConfig(level=logging.INFO,format='%(asctime)s:%(levelname)s:[%(module)s.%(funcName)s.%(lineno)d]:%(message)s')
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 class ActionHandlerConfigurationException (Exception):
     pass
@@ -24,7 +24,6 @@ class CloudAction (ABC):
 	def get_ref_nodes(self,d, keyAttr : str = 'ref',level : int = 0):
 		if (isinstance(d,str)) : 
 			return
-
 		for key, value in d.items():
 			if (isinstance(value,dict)) : 
 				if (keyAttr in value):
@@ -48,16 +47,42 @@ class CloudAction (ABC):
 	        return self.configuration['Variables'][var]
 	    return default 
 
-	def getReference( self, refs : dict,  default : str) -> bool :
 
+	def xxgetReference( self, refs : dict,  default : str) -> bool :
+
+		logger.debug(f'fetch refs {refs}')
 		references = {} 
 		for k,v in self.get_ref_nodes(self.configuration):
 			for ref in refs:
+				val=v['ref']
+
+				logger.debug(f'compare : v:{val} == {ref} ')
 				if ( v['ref'] == ref ):
+					logger.debug(f'exists : {refs[ref] }? ')
 					if ( refs[ref] in v):
 						#print(f'FOUND {k}: {ref}.{refs[ref]} = {v[refs[ref]]}')
+						logger.debug(f'match : {refs[ref] is {v[refs[ref]]} }? ')
 						references[ref] = {'field':refs[ref], 'value':v[refs[ref]] }
-		#print(f'references are: {references}')	
+		print(f'references are: {references}')	
+		return references 
+
+
+	def getReference( self, refs : dict,  default : str) -> bool :
+
+		logger.debug(f'fetch refs {refs}')
+		references = {} 
+		for k,v in self.get_ref_nodes(self.configuration):
+			for ref in refs:
+				val=v['ref']
+				compareRef=ref.split(':')[1]
+				logger.debug(f'compare : v:{val} == {compareRef} ')
+				if ( v['ref'] == compareRef ):
+					logger.debug(f'exists : {refs[ref] }? ')
+					if ( refs[ref] in v):
+						#print(f'FOUND {k}: {ref}.{refs[ref]} = {v[refs[ref]]}')
+						logger.debug(f'match : {refs[ref] is {v[refs[ref]]} }? ')
+						references[ref] = {'field':refs[ref], 'value':v[refs[ref]] }
+		logger.debug(f'references are: {json.dumps(references,indent=2)}')	
 		return references 
 
 	def setResourceConfiguration( self, attr : str, val : str) -> bool : 
@@ -76,13 +101,16 @@ class CloudAction (ABC):
 			val = json.dumps(val, indent=1)
 
 		bRet, val2 = self.variableReplace(attr,val)
+		logger.debug(f'var-replacement stage1:{json.dumps(val2,indent=4)}')
 		bRet, val3 = self.referenceReplace(attr,val2)
+		logger.debug(f'ref-replacement stage2:{json.dumps(val3,indent=4)}')
 		bRet, val4 = self.variableReplace(attr,val3)
+		logger.debug(f'var-replacement stage3:{json.dumps(val4,indent=4)}')
 		
-		logger.info(f'{attr} = {val4}  default:{default}')
 		return bRet, val4
 	
 	def variableReplace(self, attr,val):
+		# Defect 20240802-1332-"None" should of been None.
 		refs = self.hasReference(val,CONST_VX_REFERENCE,None)
 		
 		if ( len(refs) == 0):
@@ -104,17 +132,21 @@ class CloudAction (ABC):
 
 	def referenceReplace(self, attr,val):
 		refs = self.hasReference(val)
-		
+		logger.debug(f'ref:{refs}')
 		if ( len(refs) == 0):
 			return True,val
 		refs = self.getReference(refs,"?")
 		bFormedOK = True
 		for ref in refs :
+
 			sn = SimpleNamespace(**refs[ref])
+			logger.debug(f'replace ref:{ref} ->{sn.field} with {sn.value} ')
 			if sn.value == '?' :
 				bFormedOK = False
 			else:
-				val =val.replace(f'ref({ref}:{sn.field})',sn.value)
+				strRef = ref.split(':')[1]
+				#val =val.replace(f'ref({ref}:{sn.field})',sn.value)
+				val =val.replace(f'ref({strRef}:{sn.field})',sn.value)
 			
 			#print(f'resource configuration : {val} --> {ref}.{sn.field}={sn.value} : {bFormedOK}  :: {val}')	
 
@@ -122,19 +154,32 @@ class CloudAction (ABC):
 			
 	def hasReference( self, val : str, regEx : str = CONST_RX_REFERENCE, ref_attr_split = CONST_REF_ATTR_SPLIT_CHAR) -> dict:
 
+		logger.debug(f'regex {regEx} split:{ref_attr_split} on {val}')
 		refs = re.findall(regEx, val)
+		logger.debug(f'refs:{refs}')
 		if ( CONST_BLANK in refs):
 			refs.remove( CONST_BLANK )
 
 		if ref_attr_split != None :
 			expandedRefs = {}
+			i = 0
 			for ref in refs:
 				ref_list = ref.split(ref_attr_split)
+				logger.debug(f'ref {ref} split into {ref_list} using delim {ref_attr_split}')
 				if ( len(ref_list) == 2):
-					expandedRefs[ref_list[0]] = ref_list[1]
+
+					logger.debug(f'[{i}]store {ref} split into {ref_list} using delim {ref_attr_split}')
+					logger.debug(f'storge before {json.dumps(expandedRefs,indent=3)}')
+					expandedRefs[f'{i}:{ref_list[0]}'] = ref_list[1]
+					#expandedRefs[ref_list[0]] = ref_list[1]
+					logger.debug(f'storge after {json.dumps(expandedRefs,indent=3)}')
+					i+=1
 				else:
 					print(f'warning - configuration issue with {ref}, no attr specified. ref ignored')
+
+			logger.debug(f'storge final {json.dumps(expandedRefs,indent=3)}')
 			return expandedRefs
+
 		return refs
 
 	def getHTTPStatusCode(self, response, meta : str = 'ResponseMetadata', status : str = 'HTTPStatusCode'):
@@ -142,7 +187,7 @@ class CloudAction (ABC):
 
 	def getHTTPStatusCodeOK ( self,response ):
 		httpStatusCode = self.getHTTPStatusCode(response)
-		return httpStatusCode == 200 or httpStatusCode == 204
+		return httpStatusCode == 200 or httpStatusCode == 204 or httpStatusCode == 201
 
 	def getClientErrorDetails(self,response):
 		return response['Error']['Code'],response['Error']['Message']
@@ -161,6 +206,9 @@ class CloudAction (ABC):
 class DefaultAction (CloudAction):
 
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
+		self.configuration = configuration
+		self.resourceConfiguration = resourceConfiguration
+
 		return (False)
 	def execute(self ) :
 		return (False,'arn:false')
