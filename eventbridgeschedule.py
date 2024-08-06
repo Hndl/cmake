@@ -3,6 +3,7 @@ import boto3
 import logging
 from typing import Final
 from handlers import *
+import time
 	
 CONST_ERRMSG_MISSING_ATTR                    : Final[str]    = 'attribute not found in resource configuration'
 							
@@ -80,6 +81,7 @@ class CreateEventBridgeSchedule( CloudAction):
 		
 		self.client = boto3.client('events')
 		self.stsClient = boto3.client('sts')
+		self.lmdClient = boto3.client('lambda')
 
 		self.action = "Create EventBridge Schedule"
 		self.configuration = configuration
@@ -131,7 +133,8 @@ class CreateEventBridgeSchedule( CloudAction):
 		if (self.getHTTPStatusCodeOK(response) == False):
 			raise Exception(f'{logStr} Failed:{response}')
 
-		self.setResourceConfiguration('arn',response['RuleArn'])
+		self.ruleArn = response['RuleArn']
+		self.setResourceConfiguration('arn',self.ruleArn)
 		
 		logger.info(f'{logStr}.Done')
 		return
@@ -152,10 +155,48 @@ class CreateEventBridgeSchedule( CloudAction):
 		logger.info(f'{logStr}.Done')
 		return
 
+	def attachRuleToLambda(self):
+		logStr = f'[{self.ref}]'
+		logger.info(f'{logStr}.Started')
+
+		bOK, self.ruleArn = self.getResourceConfiguration('arn',None)
+		bOK, self.function = self.getResourceConfiguration('function',None)
+
+		response = self.lmdClient.create_event_source_mapping(
+    		EventSourceArn=self.ruleArn,
+    		FunctionName=self.function
+    	)
+
+		if (self.getHTTPStatusCodeOK(response) == False):
+			raise Exception(f'{logStr} Failed:{response}')
+
+		logger.info(f'{logStr}.Done')
+		return
+	
+	def givePermission(self):
+
+		logStr = f'[{self.ref}]'
+		logger.info(f'{logStr}.Started')
+
+		func_lambda_arn = self.new_target['Arn']
+		response = self.lmdClient.add_permission(
+            FunctionName=func_lambda_arn,
+            StatementId=str(time.time())[-5:]+self.id,
+            Action='lambda:InvokeFunction',
+            Principal='events.amazonaws.com',
+            SourceArn=self.ruleArn
+        )
+
+		if (self.getHTTPStatusCodeOK(response) == False):
+			raise Exception(f'{logStr} Failed:{response}')
+
+		logger.info(f'{logStr}.Done')
+
 	def execute(self ) :
 		self.putRule()
 		self.putTarget()
-		
+		#self.attachRuleToLambda()
+		self.givePermission()
 
 		#print(f'{json.dumps(response,indent=4)}')
 

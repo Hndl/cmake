@@ -26,34 +26,43 @@ def build_environment(  configuration : dict ) -> int :
     #reuse function to do both delete and create.
     destroyResources(configuration)
    
-
     try:
         createResources(configuration)
     except Exception as eX:
         logger.error(eX)
 
+    try:
+        renderReport(configuration)
+    except Exception as eX:
+        logger.error(eX)
+
    # TODO support accesskeys,region and secrety
-   # TODO user to attach policy
-   # Test Policies are being detached 
-   # policys attached to user are not being deleted correctly.
+
 def destroyResources( configuration : dict) -> int:
     errCount = 0
     for resourceItem in configuration['Delete'] :
         try:
-            print(f"destroying {resourceItem['type']}:{resourceItem['ref']} - Started")
+            #print(f"destroying {resourceItem['type']}:{resourceItem['ref']} - Started")
             handleResource('Delete',resourceItem['type'],configuration,resourceItem)
-            print(f"destroying {resourceItem['type']}:{resourceItem['ref']} - Completed")
+            #print(f"destroying {resourceItem['type']}:{resourceItem['ref']} - Completed")
         except Exception as eX:
             logger.warning(eX)
             errCount+=1
 
     return errCount
 
+
+def renderReport( configuration : dict) -> int:
+    for resourceItem in configuration['Report'] :
+        handleResource('Report','Notes',configuration,resourceItem)
+    return 0
+
+
 def createResources( configuration : dict) -> int:
     for resourceItem in configuration['Create'] :
-        print(f"build {resourceItem['type']}:{resourceItem['ref']} - Started")
+        #print(f"build {resourceItem['type']}:{resourceItem['ref']} - Started")
         handleResource('Create',resourceItem['type'],configuration,resourceItem)
-        print(f"build {resourceItem['type']}:{resourceItem['ref']} - Completed")
+        #print(f"build {resourceItem['type']}:{resourceItem['ref']} - Completed")
     
     return 0
 

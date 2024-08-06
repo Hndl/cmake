@@ -142,7 +142,7 @@ class CreateUser( CloudAction):
 		return
 
 	def charsequence_generator(self,len=6, charset=string.ascii_uppercase + string.digits):
-		return 'I.'.join(random.choice(charset) for _ in range(len-2))
+		return 'I1.'.join(random.choice(charset) for _ in range(len-3))
 
 	def attachProfile(self):
 		

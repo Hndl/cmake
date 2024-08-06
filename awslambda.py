@@ -151,9 +151,6 @@ class CreateLambda( CloudAction):
 		logStr = f'[{self.ref}]'
 		logger.info(f'{logStr},Started')
 
-		
-		time.sleep(20) # Sleep for 3
-
 		response = self.client.create_function(
 			FunctionName=self.id,
 			Runtime=self.runtime,

@@ -14,6 +14,8 @@ from users import *
 from loggroup import *
 from awslambda import *
 from eventbridgeschedule import *
+from awssleep import *
+from notes import *
 
 logging.basicConfig(level=logging.INFO,format='%(asctime)s:%(levelname)s:[%(module)s.%(funcName)s.%(lineno)d]:%(message)s')
 logger = logging.getLogger(__name__)
@@ -52,7 +54,10 @@ def cloudActionFactory ( action : str, command : str, configuration : dict, reso
 		'Create:Lambda' : CreateLambda(),
 		'Delete:Lambda' : DeleteLambda(),
 		'Create:EventBridgeSchedule' : CreateEventBridgeSchedule(),
-		'Delete:EventBridgeSchedule' : DeleteEventBridgeSchedule()
+		'Delete:EventBridgeSchedule' : DeleteEventBridgeSchedule(),
+		'Create:Sleep' : CreateSleep(),
+		'Delete:Sleep' : DeleteSleep(),
+		'Report:Notes' : ReportNotes()
 	}
 	
 	if f'{action}:{command}' in availableHandlers:
