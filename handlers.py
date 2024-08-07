@@ -21,6 +21,12 @@ class ActionHandlerConfigurationException (Exception):
 
 class CloudAction (ABC):
 
+	def setFail(self):
+		self.setResourceConfiguration('result',"Fail")
+
+	def setSuccess(self):
+		self.setResourceConfiguration('result',"Success")
+			
 	def get_ref_nodes(self,d, keyAttr : str = 'ref',level : int = 0):
 		if (isinstance(d,str)) : 
 			return

@@ -13,10 +13,12 @@ logger = logging.getLogger()
 class DeleteLambda( CloudAction):
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
 		
-		self.client = boto3.client('lambda')
+		
 		self.action = "Delete Lambda"
 		self.configuration = configuration
 		self.resourceConfiguration = resourceConfiguration
+
+		self.setFail()
 			
 		bOK, self.ref = self.getResourceConfiguration('ref',None)
 		if (bOK == False or self.ref == None):
@@ -25,6 +27,23 @@ class DeleteLambda( CloudAction):
 		bOK, self.id = self.getResourceConfiguration('id',None)
 		if (bOK == False or self.id == None):
 			raise ActionHandlerConfigurationException(f'id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		self.client = boto3.client('lambda',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
 		
 	def execute( self ):
 		
@@ -34,6 +53,7 @@ class DeleteLambda( CloudAction):
 		if (self.getHTTPStatusCodeOK(response) == False):
 			raise Exception(f'{logStr} Failed:{response}')
 
+		self.setSuccess()
 		logger.info(f'{logStr}.Done')
 
 	def final( self) :
@@ -45,14 +65,15 @@ class CreateLambda( CloudAction):
 
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
 		
-		self.client = boto3.client('lambda')
-		self.stsClient = boto3.client('sts')
+		#self.client = boto3.client('lambda')
+		#self.stsClient = boto3.client('sts')
 
 		self.action = "Create Lambda"
 		self.configuration = configuration
 		self.resourceConfiguration = resourceConfiguration
+		self.setFail()
 
-		self.accountId = self.stsClient.get_caller_identity()['Account']
+		#self.accountId = self.stsClient.get_caller_identity()['Account']
 		
 		bOK, self.ref = self.getResourceConfiguration('ref',None)
 		if (bOK == False or self.ref == None):
@@ -61,8 +82,6 @@ class CreateLambda( CloudAction):
 		bOK, self.id= self.getResourceConfiguration('id',None)
 		if (bOK == False or self.id == None):
 			raise ActionHandlerConfigurationException(f'id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
-
-		bOK, self.region = self.getResourceConfiguration('region',None)
 		
 		bOK, self.sourceCodeBucket = self.getResourceConfiguration('sourceCodeBucket',None)
 		if (bOK == False or self.sourceCodeBucket == None):
@@ -144,6 +163,30 @@ class CreateLambda( CloudAction):
 		if (self.tags != None):
 			self.new_tags = json.loads(self.tags) 
 
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		self.client = boto3.client('lambda',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.stsClient = boto3.client('sts',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.accountId = self.stsClient.get_caller_identity()['Account']
+
 		return
 
 	def execute(self ) :
@@ -190,7 +233,7 @@ class CreateLambda( CloudAction):
 		self.setResourceConfiguration('codeSha256',response['CodeSha256'])
 		self.setResourceConfiguration('state',response['State'])
 		self.setResourceConfiguration('stateReason',response['StateReason'])
-		
+		self.setSuccess()
 		logger.info(f'{logStr}.Done')
 		return True
 

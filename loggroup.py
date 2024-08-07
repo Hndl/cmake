@@ -15,10 +15,12 @@ logger = logging.getLogger()
 class DeleteLoggroup( CloudAction):
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
 		
-		self.client = boto3.client('logs')
+		#self.client = boto3.client('logs')
 		self.action = "Delete Loggroup"
 		self.configuration = configuration
 		self.resourceConfiguration = resourceConfiguration
+
+		self.setFail()
 		
 		bOK, self.ref = self.getResourceConfiguration('ref',None)
 		if (bOK == False or self.ref == None):
@@ -27,7 +29,23 @@ class DeleteLoggroup( CloudAction):
 		bOK, self.id = self.getResourceConfiguration('id',None)
 		if (bOK == False or self.id == None):
 			raise ActionHandlerConfigurationException(f'id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
-			
+		
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		self.client = boto3.client('logs',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
 		return
 	
 
@@ -40,6 +58,8 @@ class DeleteLoggroup( CloudAction):
 		if (self.getHTTPStatusCodeOK(response) == False):
 			raise Exception(f'{logStr} Failed:{response}')
 		
+		self.setSuccess()
+
 		logger.info(f'{logStr}.Done')
 
 	def final( self) :
@@ -53,14 +73,16 @@ class CreateLoggroup( CloudAction):
 
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
 		
-		self.client = boto3.client('logs')
-		self.stsClient = boto3.client('sts')
+		#self.client = boto3.client('logs')
+		#self.stsClient = boto3.client('sts')
 
 		self.action = "Create Loggroup"
 		self.configuration = configuration
 		self.resourceConfiguration = resourceConfiguration
 
-		self.accountId = self.stsClient.get_caller_identity()['Account']
+		self.setFail()
+
+		#self.accountId = self.stsClient.get_caller_identity()['Account']
 		
 		bOK, self.ref = self.getResourceConfiguration('ref',None)
 		if (bOK == False or self.ref == None):
@@ -70,10 +92,6 @@ class CreateLoggroup( CloudAction):
 		if (bOK == False or self.id == None):
 			raise ActionHandlerConfigurationException(f'id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
 
-		bOK, self.region = self.getResourceConfiguration('region',None)
-		if (bOK == False or self.id == None):
-			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
-
 		bOK, self.groupClass = self.getResourceConfiguration('groupClass','STANDARD')
 
 		bOK, self.retentionPeriod = self.getResourceConfiguration('retentionPeriod','1')
@@ -82,6 +100,30 @@ class CreateLoggroup( CloudAction):
 		bOK, self.tags = self.getResourceConfiguration('TagSet',None)
 		if (self.tags != None):
 			self.new_tags = json.loads(self.tags) 
+
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		self.client = boto3.client('logs',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.stsClient = boto3.client('sts',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.accountId = self.stsClient.get_caller_identity()['Account']
 
 		return
 
@@ -129,6 +171,7 @@ class CreateLoggroup( CloudAction):
 		self.setResourceConfiguration('areaArn',self.makeAreaARN())
 		self.creteLogGroup()
 		self.applyRetentionPeriod()
+		self.setSuccess()
 		
 		return True
 

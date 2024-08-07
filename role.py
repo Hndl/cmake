@@ -15,13 +15,14 @@ class DeleteRole( CloudAction):
 				
 		self.action = "Delete Role"
 
-		self.client = boto3.client('iam')
-		self.stsClient = boto3.client('sts')
+		#self.client = boto3.client('iam')
+		#self.stsClient = boto3.client('sts')
 		
 		self.configuration = configuration
 		self.resourceConfiguration = resourceConfiguration
+		self.setFail()
 
-		self.accountId = self.stsClient.get_caller_identity()['Account']
+		#self.accountId = self.stsClient.get_caller_identity()['Account']
 		
 		bOK, self.ref = self.getResourceConfiguration('ref',None)
 		if (bOK == False or self.ref == None):
@@ -30,6 +31,30 @@ class DeleteRole( CloudAction):
 		bOK, self.id = self.getResourceConfiguration('id',None)
 		if (bOK == False or self.id == None):
 			raise ActionHandlerConfigurationException(f'id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		self.client = boto3.client('iam',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.stsClient = boto3.client('sts',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.accountId = self.stsClient.get_caller_identity()['Account']
 
 		return
 
@@ -41,7 +66,7 @@ class DeleteRole( CloudAction):
 
 		if (self.getHTTPStatusCodeOK(response) == False):
 			raise Exception(f'{logStr}  Failed:{response}')
-
+		self.setSuccess()
 		logger.info(f'{logStr}.Done')
 		return		
 
@@ -57,13 +82,15 @@ class CreateRole( CloudAction):
 			
 		self.action = "Create Role"
 
-		self.client = boto3.client('iam')
-		self.stsClient = boto3.client('sts')
-		self.orgClient = boto3.client('organizations')
+		#self.client = boto3.client('iam')
+		#self.stsClient = boto3.client('sts')
+		#self.orgClient = boto3.client('organizations')
 		self.configuration = configuration
 		self.resourceConfiguration = resourceConfiguration
 
-		self.accountId = self.stsClient.get_caller_identity()['Account']
+		self.setFail()
+
+		#self.accountId = self.stsClient.get_caller_identity()['Account']
 		
 		bOK, self.ref = self.getResourceConfiguration('ref',None)
 		if (bOK == False or self.ref == None):
@@ -92,6 +119,36 @@ class CreateRole( CloudAction):
 			raise ActionHandlerConfigurationException(f'PolicyRoleTemplate {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
 		else:
 			self.policyTemplate = json.loads(self.policyTemplate)
+
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		self.client = boto3.client('iam',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.stsClient = boto3.client('sts',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.orgClient = boto3.client('organizations',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.accountId = self.stsClient.get_caller_identity()['Account']
+
 
 		return
 
@@ -157,6 +214,7 @@ class CreateRole( CloudAction):
 	def execute(self ) :
 		self.createResource()
 		self.updateResourceRolePolicy()
+		self.setSuccess()
 		return True
 
 

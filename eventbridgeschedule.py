@@ -14,10 +14,12 @@ logger = logging.getLogger()
 class DeleteEventBridgeSchedule( CloudAction):
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
 		
-		self.client = boto3.client('events')
+		
 		self.action = "Delete EventBridge Schedule"
 		self.configuration = configuration
 		self.resourceConfiguration = resourceConfiguration
+
+		self.setFail()
 			
 		bOK, self.ref = self.getResourceConfiguration('ref',None)
 		if (bOK == False or self.ref == None):
@@ -31,7 +33,25 @@ class DeleteEventBridgeSchedule( CloudAction):
 		if (bOK == False or self.targetId == None):
 			raise ActionHandlerConfigurationException(f'targetId {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
 
-			
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		self.client = boto3.client('events',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+
+
 	
 	def deleteTarget(self):
 		logStr = f'[{self.ref}]'
@@ -66,7 +86,7 @@ class DeleteEventBridgeSchedule( CloudAction):
 
 		self.deleteTarget()
 		self.deleteRule()
-		
+		self.setSuccess()
 
 	def final( self) :
 		pass
@@ -79,15 +99,11 @@ class CreateEventBridgeSchedule( CloudAction):
 
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
 		
-		self.client = boto3.client('events')
-		self.stsClient = boto3.client('sts')
-		self.lmdClient = boto3.client('lambda')
-
+		
 		self.action = "Create EventBridge Schedule"
 		self.configuration = configuration
 		self.resourceConfiguration = resourceConfiguration
-
-		self.accountId = self.stsClient.get_caller_identity()['Account']
+		self.setResourceConfiguration('result',"fail")
 		
 		bOK, self.ref = self.getResourceConfiguration('ref',None)
 		if (bOK == False or self.ref == None):
@@ -101,8 +117,6 @@ class CreateEventBridgeSchedule( CloudAction):
 		if (bOK == False or self.cron == None):
 			raise ActionHandlerConfigurationException(f'cron {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
 
-		bOK, self.region = self.getResourceConfiguration('region',None)
-		
 		bOK, self.description = self.getResourceConfiguration('description','None')
 
 		bOK, self.status = self.getResourceConfiguration('status','DISABLED')
@@ -117,6 +131,38 @@ class CreateEventBridgeSchedule( CloudAction):
 		if (self.tags != None):
 			self.new_tags = json.loads(self.tags) 
 
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		self.client = boto3.client('events',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.stsClient = boto3.client('sts',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.lmdClient = boto3.client('lambda',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.accountId = self.stsClient.get_caller_identity()['Account']
+
+		self.setResourceConfiguration('result',"fail")
+
+		
 		return
 
 	def putRule(self) : 
@@ -197,7 +243,7 @@ class CreateEventBridgeSchedule( CloudAction):
 		self.putTarget()
 		#self.attachRuleToLambda()
 		self.givePermission()
-
+		self.setResourceConfiguration('result',"success")
 		#print(f'{json.dumps(response,indent=4)}')
 
 		return True

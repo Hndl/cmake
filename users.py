@@ -17,10 +17,12 @@ class DeleteUser( CloudAction):
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
 		
 		
-		self.client = boto3.client('iam')
+		#self.client = boto3.client('iam')
 		self.action = "Delete User"
 		self.configuration = configuration
 		self.resourceConfiguration = resourceConfiguration
+
+		self.setFail()
 		
 		bOK, self.ref = self.getResourceConfiguration('ref',None)
 		if (bOK == False or self.ref == None):
@@ -29,6 +31,23 @@ class DeleteUser( CloudAction):
 		bOK, self.id = self.getResourceConfiguration('id',None)
 		if (bOK == False or self.id == None):
 			raise ActionHandlerConfigurationException(f'id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		self.client = boto3.client('iam',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
 			
 	def deleteProfile(self):
 
@@ -92,6 +111,8 @@ class DeleteUser( CloudAction):
 		if (self.getHTTPStatusCodeOK(response) == False):
 			raise Exception(f'{logStr} Failed:{response}')
 		
+		self.setSuccess()
+
 		logger.info(f'{logStr}.Done')
 
 	def final( self) :
@@ -106,10 +127,12 @@ class CreateUser( CloudAction):
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
 		
 		
-		self.client = boto3.client('iam')
+		#self.client = boto3.client('iam')
 		self.action = "Create User"
 		self.configuration = configuration
 		self.resourceConfiguration = resourceConfiguration
+
+		self.setFail()
 		
 		bOK, self.ref = self.getResourceConfiguration('ref',None)
 		if (bOK == False or self.ref == None):
@@ -137,6 +160,23 @@ class CreateUser( CloudAction):
 			self.new_policies = json.loads(self.policies) 
 
 		bOK, self.secret = self.getResourceConfiguration('secret',"No")
+
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		self.client = boto3.client('iam',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
 	
 
 		return
@@ -221,6 +261,7 @@ class CreateUser( CloudAction):
 			self.enableAccessKey()
 		
 		self.attachPolicies()
+		self.setSuccess()
 		return True
 
 	def final(self ) -> bool:

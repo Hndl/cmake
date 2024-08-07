@@ -21,13 +21,15 @@ class DeletePolicy( CloudAction):
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
 		
 		self.action = "Delete Policy"
-		self.client = boto3.client('iam')
-		self.stsClient = boto3.client('sts')
+		#self.client = boto3.client('iam')
+		#self.stsClient = boto3.client('sts')
 
 		self.configuration = configuration
 		self.resourceConfiguration = resourceConfiguration
 
-		self.accountId = self.stsClient.get_caller_identity()['Account']
+		self.setFail()
+
+		#self.accountId = self.stsClient.get_caller_identity()['Account']
 		
 		bOK, self.ref = self.getResourceConfiguration('ref',None)
 		if (bOK == False or self.ref == None):
@@ -37,6 +39,29 @@ class DeletePolicy( CloudAction):
 		if (bOK == False or self.id == None):
 			raise ActionHandlerConfigurationException(f'id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
 
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		self.client = boto3.client('iam',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.stsClient = boto3.client('sts',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.accountId = self.stsClient.get_caller_identity()['Account']
 
 	def detach_user_policy(self, response):
 		logStr = f"[{self.ref}]"
@@ -104,6 +129,7 @@ class DeletePolicy( CloudAction):
 		
 		self.detach_policy_dependenties()
 		self.deletePolicy()
+		self.setSuccess()
 		return True
 
 	def final(self ) -> bool:
@@ -117,13 +143,15 @@ class CreatePolicy( CloudAction):
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
 		
 		self.action = "Create Policy"
-		self.client = boto3.client('iam')
-		self.stsClient = boto3.client('sts')
+		#self.client = boto3.client('iam')
+		#self.stsClient = boto3.client('sts')
 
 		self.configuration = configuration
 		self.resourceConfiguration = resourceConfiguration
 
-		self.accountId = self.stsClient.get_caller_identity()['Account']
+		self.setFail()
+
+		#self.accountId = self.stsClient.get_caller_identity()['Account']
 		
 		bOK, self.ref = self.getResourceConfiguration('ref',None)
 		if (bOK == False or self.ref == None):
@@ -142,11 +170,34 @@ class CreatePolicy( CloudAction):
 		bOK, self.delete = self.getResourceConfiguration('delete',"no")
 
 		bOK, self.description = self.getResourceConfiguration('description',"None-Set")
-		
 
 		bOK, self.tags = self.getResourceConfiguration('TagSet',None)
 		if (self.tags != None):
 			self.new_tags = json.loads(self.tags) 
+
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		self.client = boto3.client('iam',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.stsClient = boto3.client('sts',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.accountId = self.stsClient.get_caller_identity()['Account']
 
 		return
 
@@ -177,6 +228,7 @@ class CreatePolicy( CloudAction):
 	def execute(self ) :
 		
 		self.createPolicy()
+		self.setSuccess()
 		return
 
 	def final(self ) -> bool:
