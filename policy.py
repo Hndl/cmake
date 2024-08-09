@@ -12,6 +12,84 @@ CONST_ERRMSG_MISSING_ATTR                    : Final[str]    = 'attribute not fo
 logging.basicConfig(level=logging.INFO,format='%(asctime)s:%(levelname)s:[%(module)s.%(funcName)s.%(lineno)d]:%(message)s')
 logger = logging.getLogger(__name__)
 
+class FetchPolicy( CloudAction):
+	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
+		self.action = "Fetch Lambda"
+		self.configuration = configuration
+		self.resourceConfiguration = resourceConfiguration
+		self.setFail()
+		bOK, self.ref = self.getResourceConfiguration('ref',None)
+		if (bOK == False or self.ref == None):
+			raise ActionHandlerConfigurationException(f'ref {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.id = self.getResourceConfiguration('id',None)
+		if (bOK == False or self.id == None):
+			raise ActionHandlerConfigurationException(f'id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}')
+
+		
+		self.client = boto3.client('iam',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.stsClient = boto3.client('sts',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+
+		self.accountId = self.stsClient.get_caller_identity()['Account']
+
+	def getPolicy(self) :
+
+		logStr = f"[{self.ref}]"
+		logger.info(f'{logStr}.Started')
+		response = self.client.get_policy(PolicyArn = self.arn)
+
+		#print(response)
+		if (self.getHTTPStatusCodeOK(response) == False):
+			raise Exception(f'{logStr} - Failed:{response}')
+
+		self.defaultPolicyVersionId = response['Policy']['DefaultVersionId']
+		self.setResourceConfiguration('defaultPolicyVersionId',self.defaultPolicyVersionId)
+		logger.info(f'{logStr}.Done')
+
+	def getDocument(self):
+		logStr = f"[{self.ref}]"
+		logger.info(f'{logStr}.Started')
+		response = self.client.get_policy_version(
+    				PolicyArn = self.arn, 
+    				VersionId = self.defaultPolicyVersionId 
+		)
+		#print(response)
+		self.defaultPolicyVersion = response['PolicyVersion']['Document']
+		self.setResourceConfiguration('defaultPolicyVersion',self.defaultPolicyVersion)
+
+		
+		logger.info(f'{logStr}.Done')
+	def execute( self ):
+		#			
+		self.arn = f'arn:aws:iam::{self.accountId}:policy/{self.id}'
+		self.setResourceConfiguration('arn',self.arn)
+		self.getPolicy()
+		self.getDocument()
+		self.setSuccess()
+
+	def final( self) :
+		pass
+
 class DeletePolicy( CloudAction):
 	def makeArn(self):
 		#arn:aws:iam::905418456790:policy/vw-vindolanda-dev-dataprocessor-meteo-b
@@ -232,4 +310,139 @@ class CreatePolicy( CloudAction):
 		return
 
 	def final(self ) -> bool:
+		pass
+
+
+class UpdatePolicy( CloudAction):
+
+	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
+				
+		self.action = "Update Role"
+
+		
+		self.configuration = configuration
+		self.resourceConfiguration = resourceConfiguration
+		self.setFail()
+
+		
+		bOK, self.ref = self.getResourceConfiguration('ref',None)
+		if (bOK == False or self.ref == None):
+			raise ActionHandlerConfigurationException(f'ref {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.id = self.getResourceConfiguration('id',None)
+		if (bOK == False or self.id == None):
+			raise ActionHandlerConfigurationException(f'id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.action = self.getResourceConfiguration('action',None)
+		if (bOK == False or self.action == None):
+			raise ActionHandlerConfigurationException(f'action {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		
+
+		if ( self.action.upper() == 'APPENDRESOURCE'):
+			bOK, self.addresources = self.getResourceConfiguration('Resource',None)
+			if (self.addresources != None):
+				self.new_addresources = json.loads(self.addresources) 
+
+		self.client = boto3.client('iam',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.stsClient = boto3.client('sts',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.accountId = self.stsClient.get_caller_identity()['Account']
+
+		self.arn = f'arn:aws:iam::{self.accountId}:policy/{self.id}'
+		self.setResourceConfiguration('arn',self.arn)
+
+		return
+
+	def getPolicy(self) :
+
+		logStr = f"[{self.ref}]"
+		logger.info(f'{logStr}.Started')
+		response = self.client.get_policy(PolicyArn = self.arn)
+
+		if (self.getHTTPStatusCodeOK(response) == False):
+			raise Exception(f'{logStr} - Failed:{response}')
+
+		self.defaultPolicyVersionId = response['Policy']['DefaultVersionId']
+		self.policyId = response['Policy']['PolicyId']
+		
+		self.setResourceConfiguration('defaultPolicyVersionId',self.defaultPolicyVersionId)
+		self.setResourceConfiguration('policyId',self.policyId)
+		logger.info(f'{logStr}.Done')
+
+	def getDocument(self):
+		logStr = f"[{self.ref}]"
+		logger.info(f'{logStr}.Started')
+		response = self.client.get_policy_version(
+    				PolicyArn = self.arn, 
+    				VersionId = self.defaultPolicyVersionId 
+		)
+		if (self.getHTTPStatusCodeOK(response) == False):
+			raise Exception(f'{logStr} - Failed:{response}')
+
+		self.defaultPolicyVersion = response['PolicyVersion']['Document']
+		self.setResourceConfiguration('defaultPolicyVersion',self.defaultPolicyVersion)
+
+		
+		logger.info(f'{logStr}.Done')
+
+	def updateResourcePolicyDocumentResource(self):
+		logStr = f"[{self.ref}]"
+		logger.info(f'{logStr}.Started')
+		i=len(self.defaultPolicyVersion['Statement'][0]['Resource'])
+		for r in self.new_addresources:
+			logger.info(f'{logStr}.[{i}]-{r}')
+			self.defaultPolicyVersion['Statement'][0]['Resource'].append(r)
+			i+=1
+		
+		
+		logger.info(f'New Policy Version:\n{self.defaultPolicyVersion}')
+		response = self.client.create_policy_version(
+    		PolicyArn= self.arn,
+    		PolicyDocument= json.dumps(self.defaultPolicyVersion),
+    		SetAsDefault= True
+		)
+
+		if (self.getHTTPStatusCodeOK(response) == False):
+			raise Exception(f'{logStr} - Failed:{response}')
+
+		logger.info(f'{logStr}.Done')
+		return
+
+	def execute(self):
+		
+		logStr = f"[{self.ref}][{self.action}]"	
+		logger.info(f'{logStr}.Started')
+
+		if ( self.action.upper() == 'APPENDRESOURCE'):
+			self.getPolicy()
+			self.getDocument()
+			self.updateResourcePolicyDocumentResource()
+			self.setSuccess()
+
+		
+		
+		logger.info(f'{logStr}.Done')
+		return		
+
+	def final(self):
 		pass

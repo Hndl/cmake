@@ -11,6 +11,26 @@ CONST_ERRMSG_MISSING_ATTR                    : Final[str]    = 'attribute not fo
 logging.basicConfig(level=logging.INFO,format='%(asctime)s:%(levelname)s:[%(module)s.%(funcName)s.%(lineno)d]:%(message)s')
 logger = logging.getLogger(__name__)
 
+class FetchBucket( CloudAction):
+	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
+		self.action = "Fetch Bucket"
+		self.configuration = configuration
+		self.resourceConfiguration = resourceConfiguration
+		self.setFail()
+		
+		bOK, self.id = self.getResourceConfiguration('id',None)
+		if (bOK == False or self.id == None):
+			raise ActionHandlerConfigurationException(f'id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+	def execute( self ):
+		self.arn = f'arn:aws:s3:::{self.id}'
+		self.setResourceConfiguration('arn',self.arn)
+		self.setSuccess()
+
+	def final( self) :
+		pass
+
+
 class DeleteBucket( CloudAction):
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
 		#self.client = boto3.client('s3')

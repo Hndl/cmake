@@ -41,18 +41,24 @@ def cloudActionFactory ( action : str, command : str, configuration : dict, reso
 		'default:default': DefaultAction(),
 		'Create:Bucket' : CreateBucket(), # Done
 		'Delete:Bucket' : DeleteBucket(), # Done
+		'Fetch:Bucket'  : FetchBucket(),  # Done
 		'Create:File' : CreateFile(), # Done
 		'Delete:File' : DeleteFile(), # Done
 		'Create:Policy': CreatePolicy(), # Done
 		'Delete:Policy': DeletePolicy(), # Done
+		'Update:Policy': UpdatePolicy(), 
+		'Fetch:Policy' : FetchPolicy(), # Done
 		'Create:Role' : CreateRole(), # Done
 		'Delete:Role' : DeleteRole(), # Done
+		'Fetch:Role'  : FetchRole(), # Done
+		'Update:Role' : UpdateRole(),# Done
 		'Create:User' : CreateUser(), # Done
 		'Delete:User'  : DeleteUser(), # Done
 		'Create:Loggroup' : CreateLoggroup(),
 		'Delete:Loggroup' : DeleteLoggroup(),
 		'Create:Lambda' : CreateLambda(),
 		'Delete:Lambda' : DeleteLambda(),
+		'Fetch:Lambda'  : FetchLambda(), 
 		'Create:EventBridgeSchedule' : CreateEventBridgeSchedule(),
 		'Delete:EventBridgeSchedule' : DeleteEventBridgeSchedule(),
 		'Create:Sleep' : CreateSleep(),

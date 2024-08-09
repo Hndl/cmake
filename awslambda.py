@@ -10,6 +10,50 @@ CONST_ERRMSG_MISSING_ATTR                    : Final[str]    = 'attribute not fo
 logging.basicConfig(level=logging.INFO,format='%(asctime)s:%(levelname)s:[%(module)s.%(funcName)s]:%(message)s')
 logger = logging.getLogger()
 
+class FetchLambda( CloudAction):
+	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
+		self.action = "Fetch Lambda"
+		self.configuration = configuration
+		self.resourceConfiguration = resourceConfiguration
+		self.setFail()
+		bOK, self.ref = self.getResourceConfiguration('ref',None)
+		if (bOK == False or self.ref == None):
+			raise ActionHandlerConfigurationException(f'ref {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.id = self.getResourceConfiguration('id',None)
+		if (bOK == False or self.id == None):
+			raise ActionHandlerConfigurationException(f'id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.region = self.getResourceConfiguration('region',None)
+		if (bOK == False or self.region == None):
+			raise ActionHandlerConfigurationException(f'region {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsSecretAccessKey = self.getResourceConfiguration('aws-secret-access-key',None)
+		if (bOK == False or self.awsSecretAccessKey == None):
+			raise ActionHandlerConfigurationException(f'aws-secret-access-key {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}') 
+
+		bOK, self.awsAccessKeyId = self.getResourceConfiguration('aws-access-key-id',None)
+		if (bOK == False or self.awsAccessKeyId == None):
+			raise ActionHandlerConfigurationException(f'aws-access-key-id {CONST_ERRMSG_MISSING_ATTR} {resourceConfiguration}')
+
+		self.stsClient = boto3.client('sts',
+									aws_access_key_id=self.awsAccessKeyId,
+									aws_secret_access_key=self.awsSecretAccessKey,
+									region_name=self.region)
+
+		self.accountId = self.stsClient.get_caller_identity()['Account']
+
+
+	def execute( self ):
+		#			 arn:aws:lambda:eu-north-1.  :905418456790.   :function:vw-vindolanda-uat-data-processor-generic
+		self.arn = f'arn:aws:lambda:{self.region}:{self.accountId}:function:{self.id}'
+		self.setResourceConfiguration('arn',self.arn)
+		self.setSuccess()
+
+	def final( self) :
+		pass
+
+
 class DeleteLambda( CloudAction):
 	def init(self, configuration : dict, resourceConfiguration : dict  ) -> bool:
 		
